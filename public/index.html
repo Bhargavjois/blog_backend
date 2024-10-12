@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add / Edit Post</title>
+    <link rel="icon" href="blog.png" type="image/icon type">  
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="simple-image.js"></script>
+    <script src="defaultThemeEditor.js"></script>
+    <link href="simple-image.css" rel="stylesheet"/>
+    <link href="style_editor.css" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+</head>
+<body data-theme="dark">
+    <nav>
+        <h1>BV / Blog</h1>
+        <button type="button" id="saveButton" data-update="false">+ Publish<span class="btn_hover_bg"></span></button>
+    </nav>
+    <div class="fixed_options">
+        <button type="button" id="dark_light"  onclick="toggleTheme()">
+            <img src="dark.png" id="dark" alt="Dark Mode" width="100%" height="100%"/>
+            <img src="light.png" id="light" alt="Light Mode" width="100%" height="100%"/>
+        </button>
+        <button type="button" id="top" onclick="scrollToTop()">
+            <img src="back.png" alt="Scroll Top" width="100%" height="100%"/>
+        </button>
+    </div>
+    <div class="container">
+        <div class="tags-input"> 
+            <input type="text" id="input-tag" 
+                placeholder="Tag..." 
+                autocomplete="off"/> 
+            <ul id="tags"></ul> 
+        </div>
+        <h1 id="title" class="title" contenteditable="true" id="title"></h1>
+        <p id="post_id" style="display:none;"></p>
+        <p class="stat">&#8600; <span contenteditable="true" id="post_auth"></span> on <span id="post_date">25 May 2024</span>.</p>
+        <div id="editorjs"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script><!-- Header -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script><!-- Delimiter -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script><!-- List -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script><!-- Checklist -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script><!-- Quote -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script><!-- Code -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script><!-- Embed -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script><!-- Table -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/link@latest"></script><!-- Link -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script><!-- Warning -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script><!-- Marker -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@latest"></script><!-- Inline Code -->
+    <script>
+    
+        let receivedData = {};
+        let postDataAsJSON = {};
+        let newPost = true;
+        let editor;
+        
+        function getURLQueryString(){
+    
+            const url = window.location.href;
+
+            // Split the URL at the question mark
+            const parts = url.split("?");
+
+            // Assuming there's data after the question mark (safer approach to check first)
+            if (parts.length > 1) {
+                const queryString = parts[1];
+                return queryString;
+            } else {
+                return "Error";
+            }
+        }
+        
+        function createTagElement(arrTags){
+            let tagsP = document.getElementById("tags");
+
+            let stringLI = "";
+            
+            if (arrTags.length > 0){
+                arrTags.forEach(element => {
+                    stringLI += '<li class="cate">' + element.name + '<button class="delete-button">X</button>' + '</li>';
+                })
+            }
+            
+            tagsP.innerHTML = stringLI;
+        }
+        
+        function formatDate(timestamp) {
+            
+            // Create a Date object from the timestamp
+            const date = new Date(timestamp);
+
+            // Extract individual components
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+            const day = String(date.getDate()).padStart(2, '0');
+            const   
+            hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2,   
+            '0');
+
+            // Construct the standard format
+            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+            return formattedDate;
+        }
+
+        async function getPosts() {
+        
+            let slug = getURLQueryString();
+        
+            if (slug == "Error")
+            {
+                return "404";
+            }
+        
+            try {
+                const url = `http://127.0.0.1:3000/post/${slug}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (response.status != 200){
+                    return data.disp_msg;
+                } else {
+                    newPost = false;
+                    receivedData = data;
+                    postDataAsJSON = JSON.stringify(receivedData.data, null, 4);
+                    return "";
+                }
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                return "500";
+            }
+        }
+    
+        getPosts().then(errMsg => {
+        
+            document.getElementById("post_id").innerText = receivedData.id;
+            editor = new EditorJS({
+
+                holder: document.getElementById('editorjs'),
+
+                autofocus: true,
+                tools: {
+                    image: {
+                        class: SimpleImage,
+                        inlineToolbar: true,
+                        config: {
+                            placeholder: 'Paste image URL'
+                        }
+                    },
+                    header: {
+                        class: Header,
+                        inlineToolbar: ['marker', 'link'],
+                        config: {
+                            placeholder: 'Header',
+                            levels: [2,3],
+                            defaultLevel: 2
+                        },
+                        shortcut: 'CMD+SHIFT+H'
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true,
+                        shortcut: 'CMD+SHIFT+L'
+                    },
+
+                    checklist: {
+                        class: Checklist,
+                        inlineToolbar: true,
+                    },
+
+                    quote: {
+                        class: Quote,
+                        inlineToolbar: true,
+                        config: {
+                            quotePlaceholder: 'Enter a quote',
+                            captionPlaceholder: 'Quote\'s author',
+                        },
+                        shortcut: 'CMD+SHIFT+O'
+                    },
+
+                    warning: Warning,
+
+                    marker: {
+                        class:  Marker,
+                        shortcut: 'CMD+SHIFT+M'
+                    },
+
+                    code: {
+                        class:  CodeTool,
+                        shortcut: 'CMD+SHIFT+C'
+                    },
+
+                    delimiter: Delimiter,
+
+                    inlineCode: {
+                        class: InlineCode,
+                        shortcut: 'CMD+SHIFT+C'
+                    },
+
+                    linkTool: LinkTool,
+
+                    embed: Embed,
+
+                    table: {
+                        class: Table,
+                        inlineToolbar: true,
+                        shortcut: 'CMD+ALT+T'
+                    },
+                },
+                data: receivedData.content,
+            });
+            
+            if (errMsg === ""){
+                document.getElementById("title").innerText = receivedData.title;
+                document.getElementById("post_auth").innerText = receivedData.author;
+                document.getElementById("post_date").innerText = formatDate(receivedData.created_at);
+                createTagElement(receivedData.tags);
+                document.getElementById("saveButton").innerHTML = '+ Update<span class="btn_hover_bg"></span>';
+                document.getElementById("saveButton").setAttribute("data-update", "true");
+            }
+        })
+    </script>
+    <style>
+        body[data-theme="light"]{
+            .tc-wrap{
+                --color-border: #000;
+            }
+        }
+    </style>
+    <script>
+        function setDefaultTheme(){
+
+            const savedMode = localStorage.getItem('themeMode') || 'dark';
+
+            if (savedMode == "Light" || savedMode == "light"){
+                document.getElementById("dark").style.display = "none";
+                document.body.setAttribute("data-theme", "light");
+                currentTheme = 1;
+            } else{
+                document.getElementById("dark").style.display = "block";
+                document.body.setAttribute("data-theme", "dark");
+                const linkElementExist = document.querySelector('link[href="prefer_style.css"]'); // Example selection by href attribute
+
+                if (!linkElementExist) {
+                    const linkElement = document.createElement('link');
+                    linkElement.rel = 'stylesheet';
+                    linkElement.href = 'prefer_style.css'; // Replace with your stylesheet path
+                    
+                    // Get reference to the body element
+                    const body = document.body;
+                    
+                    // Append the link element to the body (effectively adding it at the end)
+                    body.appendChild(linkElement);
+                }   
+
+                currentTheme = 0;
+            }
+        }
+        setDefaultTheme();
+    </script>
+	<script src="addPost.js">
+	</script>
+</body>
+</html>

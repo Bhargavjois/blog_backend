@@ -1,0 +1,58 @@
+.tc-popover__item-icon{
+    background-color: #333;
+}
+.ce-code__textarea{
+    background-color: #333;
+    color: bisque;
+}
+.cdx-checklist__item-checkbox-check{
+    background-color: #333;
+}
+.tc-popover {
+    background-color: #121212;
+}
+.tc-popover__item{
+    background-color: #222;
+}
+.tc-cell--selected {
+    background: #444;
+}
+.tc-add-column:hover, .tc-add-row:hover {
+    background-color: #444;
+}
+.tc-add-row:hover:before {
+    transition: .1s;
+    background-color: #222;
+}
+@media (hover: hover) {
+    .tc-add-column:hover, .tc-add-row:hover {
+        transition: background-color .1s ease;
+        background-color: #444;
+    }
+    .tc-add-row:hover:before {
+        transition: .1s;
+        background-color: #222;
+    }
+    .tc-cell--selected {
+        background: #444;
+    }
+    .tc-row--selected {
+        background: #444;
+    }
+    .tc-row--selected:after {
+        background: #444;
+    }
+    .tc-popover {
+        background-color: #121212;
+    }
+    .tc-popover__item {
+        background-color: #222;
+    }
+    .tc-popover__item:hover {
+        background: #444;
+    }
+    .tc-popover__item-icon{
+        outline: none;
+        border: none;
+    }
+}
