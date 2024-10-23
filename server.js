@@ -78,7 +78,7 @@ function slugify(title) {
 // and allow request from all sources.
 const app = express();
 app.use(express.json());
-const allowedOrigins = ['https://bvdevblog.vercel.app'];
+const allowedOrigins = ['https://bvdevblog.vercel.app', 'https://blogbackend-production-5dc1.up.railway.app'];
 
 app.use(cors({
   origin: function (origin, callback) {
