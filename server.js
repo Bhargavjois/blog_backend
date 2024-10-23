@@ -90,7 +90,7 @@ app.use(bodyParser.json());
 // Disallow request the base root.
 function disallowRoot(req, res, next) {
     if (req.originalUrl === '/') {
-        res.redirect('/new-post');  // Redirect to add-post route
+        return res.redirect('/login');  // Redirect to add-post route
     }
     next();
 }
@@ -148,7 +148,7 @@ app.get('/receive-token', (req, res) => {
 
 // Route to serve the login page
 app.get('/login', alreadyLoggedIn, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    return res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // Route to handle login
@@ -166,7 +166,7 @@ app.post('/login', async (req, res) => {
         return res.status(400).json({ error: error.message });
     }
 
-    res.redirect(`/receive-token?token=${data.session.access_token}`);
+    return res.redirect(`/receive-token?token=${data.session.access_token}`);
 });
 
 // Route to handle logout
@@ -178,7 +178,7 @@ app.get('/logout', (req, res) => {
             return res.status(500).json({ error: 'Could not log out' });
         }
         // Redirect to the login page or home page after logout
-        res.redirect('/login');
+        return res.redirect('/login');
     });
 });
 
@@ -193,10 +193,11 @@ app.get('/post/:postSlug', async (req, res) => {
         const { data, error } = await supabase.from('posts').select('*, tags:tags(name), commensts:comments(*)').eq('slug', postSlug);
         
         // The the full post data.
-        res.json(data[0]);
+        return res.json(data[0]);
         
     } catch (error) {
-        
+        console.error(error);
+        return res.status(500).json({ message: 'Error fetching post!' }); 
     }
 });
 
@@ -235,13 +236,13 @@ app.post('/add-post', async (req, res) => {
         processTags(tags, post.id);
 
         // Send the slug the data and successfully added message.
-        res.json({ message: 'Post added successfully!', id: postSlug, error: '200' });
+        return res.json({ message: 'Post added successfully!', id: postSlug, error: '200' });
     }
 
     // If any error the show 500 - Server fail.
     catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error adding post!' });
+        return res.status(500).json({ message: 'Error adding post!' });
     }
 });
 
@@ -286,13 +287,13 @@ app.post('/update-post', async (req, res) => {
         processTags(tags, post.id);
 
         // Send the slug the data and successfully added message.
-        res.json({ message: 'Post Updated successfully!', id: postSlug, error: '200' });
+        return res.json({ message: 'Post Updated successfully!', id: postSlug, error: '200' });
     }
 
     // If any error the show 500 - Server fail.
     catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error updating post!' });
+        return res.status(500).json({ message: 'Error updating post!' });
     }
 });
 
@@ -320,13 +321,13 @@ app.get('/page/:page', async (req, res) => {
         }
         
         // Send page info, and all the fetched posts as response.
-        res.json({ message: `Fetched ${PAGE_SIZE} posts successfully!`, moreInfo: pageInfo, posts: pagePosts });
+        return res.json({ message: `Fetched ${PAGE_SIZE} posts successfully!`, moreInfo: pageInfo, posts: pagePosts });
     }
 
     // If any error the show 500 - Server fail.
     catch(error) {
         console.error(error);
-        res.status(500).json({ message: 'Error fetching posts!' });
+        return res.status(500).json({ message: 'Error fetching posts!' });
     }
 });
 
@@ -336,11 +337,11 @@ app.get('/explore', async (req, res) => {
         const { data: tags, error } = await supabase.rpc('get_tags_with_post_count');
           
         // Send page info, and all the fetched posts as response.
-        res.json({ message: `Fetched tags successfully!`, tags: tags });
+        return res.json({ message: `Fetched tags successfully!`, tags: tags });
         
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error fetching tags!' });
+        return res.status(500).json({ message: 'Error fetching tags!' });
     }
 });
 
@@ -373,17 +374,17 @@ app.get('/tag/:tag/:page?', async (req, res) => {
         }
           
         // Send page info, and all the fetched posts as response.
-        res.json({ message: `Fetched all posts of ${tag} successfully!`, moreInfo: pageInfo, posts: tagPosts });
+        return res.json({ message: `Fetched all posts of ${tag} successfully!`, moreInfo: pageInfo, posts: tagPosts });
         
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error fetching tags!' });
+        return res.status(500).json({ message: 'Error fetching tags!' });
     }
 });
 
 // Route to show add new post UI.
 app.get('/new-post', isAuthenticated, async (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Add comments to the post.
@@ -415,10 +416,10 @@ app.post('/add-comment', async (req, res) => {
         }
 
         // Send the slug the data and successfully added message.
-        res.json({ message: 'Comment added successfully!', comment: commentAdded, error: '200' });
+        return res.json({ message: 'Comment added successfully!', comment: commentAdded, error: '200' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error fetching tags!' });
+        return res.status(500).json({ message: 'Error fetching tags!' });
     }
 })
 
@@ -446,10 +447,10 @@ app.get('/search', async (req, res) => {
             fetchedCount: data.length,
         }
         
-        res.json({ message: `Fetched ${count} search results`, moreInfo: pageInfo, posts: data})
+        return res.json({ message: `Fetched ${count} search results`, moreInfo: pageInfo, posts: data})
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error fetching posts!' });
+        return res.status(500).json({ message: 'Error fetching posts!' });
     }
 })
 
