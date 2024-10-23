@@ -38,7 +38,7 @@ function getURLQueryString(){
     }
 }
 
-let url = 'http://127.0.0.1:3000/add-post';
+let url = 'https://blog-backend-ce3.pages.dev/add-post';
 let taskSuccess = 'added';
 let taskFailed = 'adding';
 
@@ -98,7 +98,7 @@ saveButton.addEventListener('click', () => {
     
     if (saveButton.getAttribute("data-update") == "true")
     {
-        url = 'http://127.0.0.1:3000/update-post';
+        url = 'https://blog-backend-ce3.pages.dev/update-post';
         modData.id = document.getElementById("post_id").innerText;
         taskSuccess = "updated";
         taskFailed = "updating"
