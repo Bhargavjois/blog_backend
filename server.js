@@ -78,7 +78,19 @@ function slugify(title) {
 // and allow request from all sources.
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: true }));
+const allowedOrigins = ['https://bvdevblog.vercel.app'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 
 
 // Middleware to parse application/x-www-form-urlencoded
