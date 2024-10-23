@@ -38,7 +38,7 @@ function getURLQueryString(){
     }
 }
 
-let url = 'https://blog-backend-0w7q.onrender.com/add-post';
+let url = 'https://blogbackend-production-5dc1.up.railway.app/add-post';
 let taskSuccess = 'added';
 let taskFailed = 'adding';
 
@@ -98,10 +98,10 @@ saveButton.addEventListener('click', () => {
     
     if (saveButton.getAttribute("data-update") == "true")
     {
-        url = 'https://blog-backend-0w7q.onrender.com/update-post';
+        url = 'https://blogbackend-production-5dc1.up.railway.app/update-post';
         modData.id = document.getElementById("post_id").innerText;
         taskSuccess = "updated";
-        taskFailed = "updating"
+        taskFailed = "updating";
     }        
 
     editor.save().then( savedData => {
