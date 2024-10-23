@@ -3,11 +3,15 @@ const { createClient }  = require('@supabase/supabase-js');
 // Get dotenv, express, cors and path modules.
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_TOKEN;
 
 // Get the set of error messages.
 const message_JSON = require('./error_codes.json');
@@ -76,6 +80,13 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: true }));
 
+
+// Middleware to parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Middleware to parse application/json (if you're sending JSON)
+app.use(bodyParser.json());
+
 // Disallow request the base root.
 function disallowRoot(req, res, next) {
     if (req.originalUrl === '/') {
@@ -87,6 +98,90 @@ app.use(disallowRoot);
 
 // Use the public directory for the static files.
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session setup
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // set true if using HTTPS
+}));
+
+
+function alreadyLoggedIn(req, res, next) {
+    const token = req.session.token; // Assume token is stored in session
+
+    if (token) {
+        return res.redirect('/new-post');
+    }
+    next();
+}
+
+function isAuthenticated(req, res, next) {
+    const token = req.session.token; // Assume token is stored in session
+
+    if (!token) {
+        return res.redirect('/login');
+    }
+
+    try {
+        // Verify the JWT token using the secret key
+        const decoded = jwt.verify(token, SUPABASE_JWT_SECRET);
+
+        req.user = decoded; // Attach decoded token to the request object
+        next(); // Proceed to the next middleware/route handler
+    } catch (err) {
+        console.error('Token verification failed:', err);
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+}
+
+app.get('/receive-token', (req, res) => {
+    const token = req.query.token;
+    if (token) {
+        // Store the token in the session (or some storage method)
+        req.session.token = token; // Ensure you have express-session or similar middleware
+        return res.redirect('/new-post');
+    }
+    return res.status(400).json({ error: 'Token missing' });
+});
+
+// Route to serve the login page
+app.get('/login', alreadyLoggedIn, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Route to handle login
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Authenticate with Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+    });
+
+    if (error) {
+        console.error('Login error:', error);
+        return res.status(400).json({ error: error.message });
+    }
+
+    res.redirect(`/receive-token?token=${data.session.access_token}`);
+});
+
+// Route to handle logout
+app.get('/logout', (req, res) => {
+    // Destroy the session
+    req.session.destroy(err => {
+        if (err) {
+            console.error('Session destruction error:', err);
+            return res.status(500).json({ error: 'Could not log out' });
+        }
+        // Redirect to the login page or home page after logout
+        res.redirect('/login');
+    });
+});
+
 
 // Get a specific post by post slug.
 app.get('/post/:postSlug', async (req, res) => {
@@ -287,7 +382,7 @@ app.get('/tag/:tag/:page?', async (req, res) => {
 });
 
 // Route to show add new post UI.
-app.get('/new-post', async (req, res) => {
+app.get('/new-post', isAuthenticated, async (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
